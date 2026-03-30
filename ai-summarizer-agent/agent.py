@@ -18,8 +18,8 @@ class SummarizerAgent:
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set")
 
-        # Allow model overrides via env var for easier rollout/migration.
-        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        # Use a broadly available default model; can still be overridden by env var.
+        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
         
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel(model_name)
