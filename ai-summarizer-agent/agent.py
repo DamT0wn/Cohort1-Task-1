@@ -18,11 +18,18 @@ class SummarizerAgent:
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set")
 
-        # Use a broadly available default model; can still be overridden by env var.
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-        
+        preferred_model = os.getenv("GEMINI_MODEL")
+        self.model_candidates = [
+            preferred_model,
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-002",
+            "gemini-1.5-flash-latest",
+            "gemini-2.0-flash",
+        ]
+        # Remove empty values and deduplicate while preserving order.
+        self.model_candidates = [m for i, m in enumerate(self.model_candidates) if m and m not in self.model_candidates[:i]]
+
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(model_name)
     
     def run(self, text: str) -> str:
         """
@@ -44,7 +51,18 @@ Text to summarize:
 
 Summary:"""
         
-        response = self.model.generate_content(prompt)
-        summary = response.text.strip()
-        
-        return summary
+        last_error = None
+        for model_name in self.model_candidates:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                summary = (response.text or "").strip()
+                if summary:
+                    return summary
+            except Exception as e:
+                last_error = e
+
+        raise RuntimeError(
+            "Unable to generate summary with available Gemini models. "
+            f"Tried: {', '.join(self.model_candidates)}. Last error: {last_error}"
+        )
