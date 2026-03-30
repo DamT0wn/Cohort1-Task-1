@@ -1,0 +1,17 @@
+# Python cache and virtual env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Git and editor files
+.git/
+.gitignore
+.vscode/
+
+# Local env and docs not required in image
+.env
+.env.*
+README.md
