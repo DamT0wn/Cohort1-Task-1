@@ -1,4 +1,3 @@
 fastapi
 uvicorn
-google-cloud-aiplatform
-vertexai
+google-generativeai==0.8.5
