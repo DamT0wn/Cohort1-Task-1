@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from agent import SummarizerAgent
 
 app = FastAPI()
@@ -12,11 +12,16 @@ except ValueError as exc:
 
 @app.get("/")
 def root():
-        return {
-                "message": "Gemini ADK Agent is running",
-                "playground": "/playground",
-                "api": "/summarize"
-        }
+    return RedirectResponse(url="/playground", status_code=307)
+
+
+@app.get("/health")
+def health():
+    return {
+        "message": "Gemini ADK Agent is running",
+        "playground": "/playground",
+        "api": "/summarize"
+    }
 
 
 @app.get("/playground", response_class=HTMLResponse)
