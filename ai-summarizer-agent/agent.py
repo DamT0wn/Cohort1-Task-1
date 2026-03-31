@@ -18,18 +18,38 @@ class SummarizerAgent:
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set")
 
-        preferred_model = os.getenv("GEMINI_MODEL")
-        self.model_candidates = [
-            preferred_model,
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-002",
-            "gemini-1.5-flash-latest",
-            "gemini-2.0-flash",
-        ]
-        # Remove empty values and deduplicate while preserving order.
-        self.model_candidates = [m for i, m in enumerate(self.model_candidates) if m and m not in self.model_candidates[:i]]
-
         genai.configure(api_key=api_key)
+        self.model_candidates = self._build_model_candidates(os.getenv("GEMINI_MODEL"))
+
+    def _build_model_candidates(self, preferred_model: str | None) -> list[str]:
+        candidates = []
+        static_candidates = [
+            preferred_model,
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+        ]
+
+        for model_name in static_candidates:
+            if model_name and model_name not in candidates:
+                candidates.append(model_name)
+
+        # Add any currently available generateContent models as dynamic fallback.
+        try:
+            for model in genai.list_models():
+                methods = getattr(model, "supported_generation_methods", []) or []
+                model_name = (getattr(model, "name", "") or "").replace("models/", "")
+                if model_name and "generateContent" in methods and model_name not in candidates:
+                    candidates.append(model_name)
+        except Exception:
+            # Keep static fallbacks when model listing is unavailable.
+            pass
+
+        if not candidates:
+            raise RuntimeError("No Gemini models available for content generation")
+
+        return candidates
     
     def run(self, text: str) -> str:
         """
